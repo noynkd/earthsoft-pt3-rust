@@ -1,0 +1,57 @@
+{
+    "version": 8,
+    "configurePresets": [
+        {
+            "name": "x64",
+            "displayName": "Visual Studio 2026 (x64)",
+            "description": "Visual Studio 2026 用のコンパイラ (x64 アーキテクチャ) を使用する",
+            "generator": "Visual Studio 18 2026",
+            "toolset": "host=x64",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/${presetName}",
+                "CMAKE_CXX_COMPILER": "cl.exe"
+            }
+        },
+        {
+            "name": "x86",
+            "displayName": "Visual Studio 2026 (x86)",
+            "description": "Visual Studio 2026 用のコンパイラ (x86 アーキテクチャ) を使用する",
+            "generator": "Visual Studio 18 2026",
+            "toolset": "host=x86",
+            "architecture": "win32",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/dist/${presetName}",
+                "CMAKE_CXX_COMPILER": "cl.exe"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "x64-debug",
+            "displayName": "Debug ビルドする (x64 アーキテクチャ)",
+            "configurePreset": "x64",
+            "configuration": "Debug"
+        },
+        {
+            "name": "x64-release",
+            "displayName": "Release ビルドする (x64 アーキテクチャ)",
+            "configurePreset": "x64",
+            "configuration": "Release"
+        },
+        {
+            "name": "x86-debug",
+            "displayName": "Debug ビルドする (x86 アーキテクチャ)",
+            "configurePreset": "x86",
+            "configuration": "Debug"
+        },
+        {
+            "name": "x86-release",
+            "displayName": "Release ビルドする (x86 アーキテクチャ)",
+            "configurePreset": "x86",
+            "configuration": "Release"
+        }
+    ]
+}
