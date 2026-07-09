@@ -1,0 +1,9 @@
+[package]
+name = "earthsoft-sdk"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+earthsoft-pt3-sys = { path = "../earthsoft-pt3-sys" }
+
+[build-dependencies]
