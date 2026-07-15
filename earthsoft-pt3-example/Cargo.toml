@@ -1,0 +1,11 @@
+[package]
+name = "earthsoft-pt3-example"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+earthsoft-sdk = { path = "../earthsoft-sdk" }
+rand = { version = "0.10.2" }
+windows-sys = { version = "0.59", features = ["Win32_System_Memory"] }
+
+[build-dependencies]
