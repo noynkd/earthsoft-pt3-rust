@@ -9,24 +9,17 @@ use earthsoft_pt3_sys::ffi;
 pub struct Pt3;
 
 impl Pt3 {
-    pub fn new() -> Result<Self, pt3::Error> {
+    pub fn new() -> Result<std::sync::Arc<Self>, pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::load_pt3_lib()
         })
         .check_result()
         .map(|_| {
-            Self
+            std::sync::Arc::new(Self)
         })
     }
 
-    pub fn delete(&self) -> Result<(), pt3::Error> {
-        pt3::Error::from(unsafe {
-            ffi::free_pt3_lib()
-        })
-        .check_result()
-    }
-
-    pub fn create_bus(&self) -> Result<pt3::Bus, pt3::Error> {
+    pub fn create_bus(self: &std::sync::Arc<Self>) -> Result<std::sync::Arc<pt3::Bus>, pt3::Error> {
         let mut raw_ptr = std::ptr::null_mut();
 
         pt3::Error::from(unsafe {
@@ -40,7 +33,16 @@ impl Pt3 {
                 return Err(pt3::Error::InternalError);
             }
 
-            Ok(pt3::Bus::new(raw_ptr))
+            Ok(pt3::Bus::new(raw_ptr, self.clone()))
         })
+    }
+}
+
+impl Drop for Pt3 {
+    fn drop(&mut self) {
+        _ = pt3::Error::from(unsafe {
+            ffi::free_pt3_lib()
+        })
+        .check_result();
     }
 }

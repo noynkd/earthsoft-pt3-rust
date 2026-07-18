@@ -1,6 +1,6 @@
 mod buffer;
 mod command;
-mod context;
+mod tuner_context;
 mod utility;
 
 use earthsoft_sdk::pt3;
@@ -8,9 +8,14 @@ use earthsoft_sdk::pt3;
 fn main() -> Result<(), pt3::Error> {
     println!("earthsoft-pt3-example version {}", env!("CARGO_PKG_VERSION"));
 
-    let bus = context::BusContext::new()
+    let pt3 = pt3::Pt3::new()
         .inspect_err(|e| {
-            eprintln!("context::BusContext::new() に失敗しました: {:?}", e);
+            eprintln!("pt3::Pt3::new() に失敗しました: {:?}", e);
+        })?;
+
+    let bus = pt3.create_bus()
+        .inspect_err(|e| {
+            eprintln!("pt3::Pt3::create_bus() に失敗しました: {:?}", e);
         })?;
 
     show_bus_menu(bus.clone())
@@ -21,10 +26,10 @@ fn main() -> Result<(), pt3::Error> {
     Ok(())
 }
 
-fn show_bus_menu(bus: std::sync::Arc<context::BusContext>) -> Result<(), pt3::Error> {
+fn show_bus_menu(bus: std::sync::Arc<pt3::Bus>) -> Result<(), pt3::Error> {
     let device_infos = bus.scan_device_info(9)
         .inspect_err(|e| {
-            eprintln!("context::BusContext::scan_device_info() に失敗しました: {:?}", e);
+            eprintln!("pt3::Bus::scan_device_info() に失敗しました: {:?}", e);
         })?;
 
     loop {
@@ -51,7 +56,7 @@ fn show_bus_menu(bus: std::sync::Arc<context::BusContext>) -> Result<(), pt3::Er
                 let device_info = &device_infos[(number - 1) as usize];
                 let device = bus.create_device(device_info)
                     .inspect_err(|e| {
-                        eprintln!("context::BusContext::allocate() に失敗しました: {:?}", e);
+                        eprintln!("pt3::Bus::create_device() に失敗しました: {:?}", e);
                     })?;
                 init_device(&device)
                     .inspect_err(|e| {
@@ -66,12 +71,12 @@ fn show_bus_menu(bus: std::sync::Arc<context::BusContext>) -> Result<(), pt3::Er
     }
 }
 
-fn show_device_menu_page_1(device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
-    let mut tuners: [context::TunerContext; 4] = std::array::from_fn(|index| {
+fn show_device_menu_page_1(device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
+    let mut tuners: [tuner_context::TunerContext; 4] = std::array::from_fn(|index| {
         let isdb = pt3::Isdb::try_from((index / 2) as u32).unwrap_or_default();
         let tuner = (index % 2) as u32;
         
-        device.create_tuner(isdb, tuner)
+        tuner_context::TunerContext::new(isdb, tuner, device.clone())
     });
     let mut busy = false;
 
@@ -153,7 +158,7 @@ fn show_device_menu_page_1(device: std::sync::Arc<context::DeviceContext>) -> Re
     }
 }
 
-fn show_device_menu_page_2(device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+fn show_device_menu_page_2(device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
     loop {
         println!("[デバイスメニュー (2 of 2)]");
         println!("0: (戻る)");
@@ -193,13 +198,13 @@ fn show_device_menu_page_2(device: std::sync::Arc<context::DeviceContext>) -> Re
     }
 }
 
-fn init_device(device: &std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+fn init_device(device: &std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
     device.open()
         .or_else(|e| {
             if e == pt3::Error::InvalidFpgaVersion {
                 let constant_info = device.get_constant_info()
                     .inspect_err(|e| {
-                        eprintln!("context::DeviceContext::get_constant_info() に失敗しました: {:?}", e);
+                        eprintln!("pt3::Device::get_constant_info() に失敗しました: {:?}", e);
                     })?;
 
                 eprintln!("回路番号 {:#04x} には対応していません.", constant_info.fpga_version);
@@ -217,7 +222,7 @@ fn init_device(device: &std::sync::Arc<context::DeviceContext>) -> Result<(), pt
         for tuner in 0u32..2u32 {
             device.set_tuner_sleep(isdb, tuner, false)
                 .inspect_err(|e| {
-                    eprintln!("context::DeviceContext::set_tuner_sleep() に失敗しました: {:?}", e);
+                    eprintln!("pt3::Device::set_tuner_sleep() に失敗しました: {:?}", e);
                 })?;
         }
     }

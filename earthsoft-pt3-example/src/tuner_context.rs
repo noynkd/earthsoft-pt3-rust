@@ -1,5 +1,4 @@
 use crate::buffer;
-use crate::context;
 use std::io::Write;
 use earthsoft_sdk::pt3;
 
@@ -11,7 +10,7 @@ use earthsoft_sdk::pt3;
 pub struct  TunerContext {
     isdb: pt3::Isdb,
     tuner: u32,
-    device_context: std::sync::Arc<context::DeviceContext>,
+    device: std::sync::Arc<pt3::Device>,
     ring_buffer: Option<buffer::RingBuffer>,
     active_session: Option<TunerSession>,
 }
@@ -22,11 +21,11 @@ impl TunerContext {
     const SYNC_BYTE: u8     = 0x47;
     const NOT_SYNC_BYTE: u8 = !Self::SYNC_BYTE;
 
-    pub(in crate::context) fn new(isdb: pt3::Isdb, tuner: u32, device_context: std::sync::Arc<context::DeviceContext>) -> Self {
+    pub(crate) fn new(isdb: pt3::Isdb, tuner: u32, device: std::sync::Arc<pt3::Device>) -> Self {
         Self {
             isdb,
             tuner,
-            device_context,
+            device,
             ring_buffer: None,
             active_session: None,
         }
@@ -35,7 +34,7 @@ impl TunerContext {
     pub fn start(&mut self) -> Result<(), pt3::Error> {
         if self.ring_buffer.is_none() {
             let mut buffer = buffer::RingBuffer::new(Self::BLOCK_SIZE, Self::BLOCK_COUNT);
-            buffer.allocate(self.device_context.clone(), true)
+            buffer.allocate(self.device.clone(), true)
                 .inspect_err(|e| {
                     eprintln!("buffer::RingBuffer::allocate() に失敗しました: {:?}", e);
                 })?;
@@ -61,7 +60,7 @@ impl TunerContext {
 
         let stop_signal = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
         let worker_stop = stop_signal.clone();
-        let device = self.device_context.clone();
+        let device = self.device.clone();
         let isdb = self.isdb;
         let tuner = self.tuner;
 
@@ -80,15 +79,15 @@ impl TunerContext {
 
         device.set_transfer_test_mode(isdb, tuner, false, 0, false)
             .inspect_err(|e| {
-                eprintln!("context::DeviceContext::set_transfer_test_mode() に失敗しました: {:?}", e);
+                eprintln!("pt3::Device::set_transfer_test_mode() に失敗しました: {:?}", e);
             })?;
         device.set_transfer_page_descriptor_address(isdb, tuner, ring_buffer.get_descriptor_address())
             .inspect_err(|e| {
-                eprintln!("context::DeviceContext::set_transfer_page_descriptor_address() に失敗しました: {:?}", e);
+                eprintln!("pt3::Device::set_transfer_page_descriptor_address() に失敗しました: {:?}", e);
             })?;
         device.set_transfer_enabled(isdb, tuner, true)
             .inspect_err(|e| {
-                eprintln!("context::DeviceContext::set_transfer_enabled() に失敗しました: {:?}", e);
+                eprintln!("pt3::Device::set_transfer_enabled() に失敗しました: {:?}", e);
             })?;
 
         let handle = std::thread::spawn(move || {
@@ -148,12 +147,12 @@ impl TunerContext {
                     println!();
                 },
                 Err(e) => {
-                    eprintln!("context::DeviceContext::get_transfer_info() に失敗しました: {:?}", e);
+                    eprintln!("pt3::Device::get_transfer_info() に失敗しました: {:?}", e);
                 },
             };
 
             if let Err(e) = device.set_transfer_enabled(isdb, tuner, false) {
-                eprintln!("context::DeviceContext::set_transfer_enabled() に失敗しました: {:?}", e);
+                eprintln!("pt3::Device::set_transfer_enabled() に失敗しました: {:?}", e);
             }
 
             let _ = return_tx.send(ring_buffer);

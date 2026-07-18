@@ -8,23 +8,18 @@ use earthsoft_pt3_sys::ffi;
 #[derive(Debug)]
 pub struct Bus {
     raw_ptr: *mut ffi::RawPt3Bus,
+    _pt3: std::sync::Arc<pt3::Pt3>,
 }
 
 impl Bus {
-    pub(crate) fn new(raw_ptr: *mut ffi::RawPt3Bus) -> Self {
-        Self {
+    pub(crate) fn new(raw_ptr: *mut ffi::RawPt3Bus, pt3: std::sync::Arc<pt3::Pt3>) -> std::sync::Arc<Self> {
+        std::sync::Arc::new(Self {
             raw_ptr,
-        }
-    }
-
-    pub fn delete(&self) -> Result<(), pt3::Error> {
-        pt3::Error::from(unsafe {
-            ffi::delete_pt3_bus(self.raw_ptr)
+            _pt3: pt3,
         })
-        .check_result()
     }
 
-    pub fn get_version(&self) -> Result<u32, pt3::Error> {
+    pub fn get_version(self: &std::sync::Arc<Self>) -> Result<u32, pt3::Error> {
         let mut version = 0;
 
         pt3::Error::from(unsafe {
@@ -39,7 +34,7 @@ impl Bus {
         })
     }
 
-    pub fn scan_device_info(&self, max_device_count: usize) -> Result<Vec<DeviceInfo>, pt3::Error> {
+    pub fn scan_device_info(self: &std::sync::Arc<Self>, max_device_count: usize) -> Result<Vec<DeviceInfo>, pt3::Error> {
         let mut raw_device_info = vec![
             ffi::RawPt3DeviceInfo::default();
             max_device_count
@@ -64,7 +59,7 @@ impl Bus {
         })
     }
 
-    pub fn create_device(&self, device_info: &DeviceInfo) -> Result<pt3::Device, pt3::Error> {
+    pub fn create_device(self: &std::sync::Arc<Self>, device_info: &DeviceInfo) -> Result<std::sync::Arc<pt3::Device>, pt3::Error> {
         let mut raw_ptr: *mut ffi::RawPt3Device = std::ptr::null_mut();
         let raw_device_info = ffi::RawPt3DeviceInfo::from(*device_info);
 
@@ -81,10 +76,22 @@ impl Bus {
                 return Err(pt3::Error::InternalError);
             }
 
-            Ok(pt3::Device::new(raw_ptr))
+            Ok(pt3::Device::new(raw_ptr, self.clone()))
         })
     }
 }
+
+impl Drop for Bus {
+    fn drop(&mut self) {
+        _ = pt3::Error::from(unsafe {
+            ffi::delete_pt3_bus(self.raw_ptr)
+        })
+        .check_result()
+    }
+}
+
+unsafe impl Send for Bus {}
+unsafe impl Sync for Bus {}
 
 // =============================================================================
 // DeviceInfo

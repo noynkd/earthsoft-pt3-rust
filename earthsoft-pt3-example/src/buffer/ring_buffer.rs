@@ -1,5 +1,4 @@
 use crate::buffer;
-use crate::context;
 use earthsoft_sdk::pt3;
 
 // =============================================================================
@@ -20,7 +19,7 @@ impl RingBuffer {
         }
     }
 
-    pub fn allocate(&mut self, device: std::sync::Arc<context::DeviceContext>, loop_back: bool) -> Result<(), pt3::Error> {
+    pub fn allocate(&mut self, device: std::sync::Arc<pt3::Device>, loop_back: bool) -> Result<(), pt3::Error> {
         self.page_buffer.allocate(device.clone())?;
         self.ts_buffer.allocate(device.clone())?;
 

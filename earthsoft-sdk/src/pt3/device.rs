@@ -8,37 +8,32 @@ use earthsoft_pt3_sys::ffi;
 #[derive(Debug)]
 pub struct Device {
     raw_ptr: *mut ffi::RawPt3Device,
+    _bus: std::sync::Arc<pt3::Bus>
 }
 
 impl Device {
-    pub(crate) fn new(raw_ptr: *mut ffi::RawPt3Device) -> Self {
-        Self {
+    pub(crate) fn new(raw_ptr: *mut ffi::RawPt3Device, bus: std::sync::Arc<pt3::Bus>) -> std::sync::Arc<Self> {
+        std::sync::Arc::new(Self {
             raw_ptr: raw_ptr,
-        }
-    }
-
-    pub fn delete(&self) -> Result<(), pt3::Error> {
-        pt3::Error::from(unsafe {
-            ffi::delete_pt3_device(self.raw_ptr)
+            _bus: bus,
         })
-        .check_result()
     }
 
-    pub fn open(&self) -> Result<(), pt3::Error> {
+    pub fn open(self: &std::sync::Arc<Self>) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::open_pt3_device(self.raw_ptr)
         })
         .check_result()
     }
 
-    pub fn close(&self) -> Result<(), pt3::Error> {
+    pub fn close(self: &std::sync::Arc<Self>) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::close_pt3_device(self.raw_ptr)
         })
         .check_result()
     }
 
-    pub fn get_constant_info(&self) -> Result<ConstantInfo, pt3::Error> {
+    pub fn get_constant_info(self: &std::sync::Arc<Self>) -> Result<ConstantInfo, pt3::Error> {
         let mut raw_constant_info = std::mem::MaybeUninit::<ffi::RawPt3ConstantInfo>::uninit();
 
         pt3::Error::from(unsafe {
@@ -56,7 +51,7 @@ impl Device {
         })
     }
 
-    pub fn set_lnb_power(&self, power: LnbPower) -> Result<(), pt3::Error> {
+    pub fn set_lnb_power(self: &std::sync::Arc<Self>, power: LnbPower) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::set_pt3_lnb_power(
                 self.raw_ptr,
@@ -66,7 +61,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn get_lnb_power(&self) -> Result<LnbPower, pt3::Error> {
+    pub fn get_lnb_power(self: &std::sync::Arc<Self>) -> Result<LnbPower, pt3::Error> {
         let mut raw_lnb_power = 0;
 
         pt3::Error::from(unsafe {
@@ -83,7 +78,7 @@ impl Device {
         })
     }
 
-    pub fn set_lnb_power_when_close(&self, power: LnbPower) -> Result<(), pt3::Error> {
+    pub fn set_lnb_power_when_close(self: &std::sync::Arc<Self>, power: LnbPower) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::set_pt3_lnb_power_when_close(
                 self.raw_ptr,
@@ -93,7 +88,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn get_lnb_power_when_close(&self) -> Result<LnbPower, pt3::Error> {
+    pub fn get_lnb_power_when_close(self: &std::sync::Arc<Self>) -> Result<LnbPower, pt3::Error> {
         let mut raw_lnb_power = 0;
 
         pt3::Error::from(unsafe {
@@ -110,7 +105,7 @@ impl Device {
         })
     }
 
-    pub fn init_tuner(&self) -> Result<(), pt3::Error> {
+    pub fn init_tuner(self: &std::sync::Arc<Self>) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::init_pt3_tuner(
                 self.raw_ptr,
@@ -119,7 +114,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn set_tuner_sleep(&self, isdb: Isdb, tuner: u32, sleep: bool) -> Result<(), pt3::Error> {
+    pub fn set_tuner_sleep(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32, sleep: bool) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::set_pt3_tuner_sleep(
                 self.raw_ptr,
@@ -131,7 +126,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn get_tuner_sleep(&self, isdb: Isdb, tuner: u32) -> Result<bool, pt3::Error> {
+    pub fn get_tuner_sleep(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32) -> Result<bool, pt3::Error> {
         let mut raw_sleep = 0;
 
         pt3::Error::from(unsafe {
@@ -148,7 +143,7 @@ impl Device {
         })
     }
 
-    pub fn set_frequency(&self, isdb: Isdb, tuner: u32, channel: u32, offset: i32) -> Result<(), pt3::Error> {
+    pub fn set_frequency(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32, channel: u32, offset: i32) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::set_pt3_frequency(
                 self.raw_ptr,
@@ -162,7 +157,7 @@ impl Device {
     }
 
     // TODO: 構造体を使用して返すようにするか検討する
-    pub fn get_frequency(&self, isdb: Isdb, tuner: u32) -> Result<(u32, i32), pt3::Error> {
+    pub fn get_frequency(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32) -> Result<(u32, i32), pt3::Error> {
         let mut raw_channel = 0;
         let mut raw_offset = 0;
 
@@ -182,7 +177,7 @@ impl Device {
     }
 
     // TODO: 構造体を使用して返すようにするか検討する
-    pub fn get_frequency_offset(&self, isdb: Isdb, tuner: u32) -> Result<(i32, i32), pt3::Error> {
+    pub fn get_frequency_offset(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32) -> Result<(i32, i32), pt3::Error> {
         let mut raw_clock = 0;
         let mut raw_offset = 0;
 
@@ -202,7 +197,7 @@ impl Device {
     }
 
     // TODO: 構造体を使用して返すようにするか検討する
-    pub fn get_cn_agc(&self, isdb: Isdb, tuner: u32) -> Result<(u32, u32, u32), pt3::Error> {
+    pub fn get_cn_agc(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32) -> Result<(u32, u32, u32), pt3::Error> {
         let mut raw_cn100 = 0;
         let mut raw_current_agc = 0;
         let mut raw_max_agc = 0;
@@ -223,7 +218,7 @@ impl Device {
         })
     }
 
-    pub fn get_rf_level(&self, tuner: u32) -> Result<f32, pt3::Error> {
+    pub fn get_rf_level(self: &std::sync::Arc<Self>, tuner: u32) -> Result<f32, pt3::Error> {
         let mut raw_rf_level = 0.0;
 
         pt3::Error::from(unsafe {
@@ -239,7 +234,7 @@ impl Device {
         })
     }
 
-    pub fn set_satellite_id(&self, tuner: u32, id: u32) -> Result<(), pt3::Error> {
+    pub fn set_satellite_id(self: &std::sync::Arc<Self>, tuner: u32, id: u32) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::set_pt3_satellite_id(
                 self.raw_ptr,
@@ -250,7 +245,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn get_satellite_id(&self, tuner: u32) -> Result<u32, pt3::Error> {
+    pub fn get_satellite_id(self: &std::sync::Arc<Self>, tuner: u32) -> Result<u32, pt3::Error> {
         let mut raw_id = 0;
 
         pt3::Error::from(unsafe {
@@ -266,7 +261,7 @@ impl Device {
         })
     }
 
-    pub fn set_inner_error_rate_layer(&self, isdb: Isdb, tuner: u32, layer: u32) -> Result<(), pt3::Error> {
+    pub fn set_inner_error_rate_layer(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32, layer: u32) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::set_pt3_inner_error_rate_layer(
                 self.raw_ptr,
@@ -278,7 +273,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn get_inner_error_rate(&self, isdb: Isdb, tuner: u32) -> Result<ErrorRate, pt3::Error> {
+    pub fn get_inner_error_rate(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32) -> Result<ErrorRate, pt3::Error> {
         let mut raw_error_rate = std::mem::MaybeUninit::<ffi::RawPt3ErrorRate>::uninit();
 
         pt3::Error::from(unsafe {
@@ -298,7 +293,7 @@ impl Device {
         })
     }
 
-    pub fn get_corrected_error_rate(&self, isdb: Isdb, tuner: u32, layer: u32) -> Result<ErrorRate, pt3::Error> {
+    pub fn get_corrected_error_rate(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32, layer: u32) -> Result<ErrorRate, pt3::Error> {
         let mut raw_error_rate = std::mem::MaybeUninit::<ffi::RawPt3ErrorRate>::uninit();
 
         pt3::Error::from(unsafe {
@@ -319,7 +314,7 @@ impl Device {
         })
     }
 
-    pub fn reset_corrected_error_count(&self, isdb: Isdb, tuner: u32) -> Result<(), pt3::Error> {
+    pub fn reset_corrected_error_count(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::reset_pt3_corrected_error_count(
                 self.raw_ptr,
@@ -330,7 +325,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn get_error_count(&self, isdb: Isdb, tuner: u32) -> Result<u32, pt3::Error> {
+    pub fn get_error_count(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32) -> Result<u32, pt3::Error> {
         let mut raw_error_count = 0u32;
 
         pt3::Error::from(unsafe {
@@ -347,7 +342,7 @@ impl Device {
         })
     }
 
-    pub fn get_satellite_tmcc(&self, tuner: u32) -> Result<SatelliteTmcc, pt3::Error> {
+    pub fn get_satellite_tmcc(self: &std::sync::Arc<Self>, tuner: u32) -> Result<SatelliteTmcc, pt3::Error> {
         let mut raw_tmcc = std::mem::MaybeUninit::<ffi::RawPt3SatelliteTmcc>::uninit();
 
         pt3::Error::from(unsafe {
@@ -366,7 +361,7 @@ impl Device {
         })
     }
 
-    pub fn get_satellite_layer(&self, tuner: u32) -> Result<SatelliteLayer, pt3::Error> {
+    pub fn get_satellite_layer(self: &std::sync::Arc<Self>, tuner: u32) -> Result<SatelliteLayer, pt3::Error> {
         let mut raw_layer = std::mem::MaybeUninit::<ffi::RawPt3SatelliteLayer>::uninit();
 
         pt3::Error::from(unsafe {
@@ -385,7 +380,7 @@ impl Device {
         })
     }
 
-    pub fn get_terrestrial_tmcc(&self, tuner: u32) -> Result<TerrestrialTmcc, pt3::Error> {
+    pub fn get_terrestrial_tmcc(self: &std::sync::Arc<Self>, tuner: u32) -> Result<TerrestrialTmcc, pt3::Error> {
         let mut raw_tmcc = std::mem::MaybeUninit::<ffi::RawPt3TerrestrialTmcc>::uninit();
 
         pt3::Error::from(unsafe {
@@ -404,7 +399,7 @@ impl Device {
         })
     }
 
-    pub fn set_amp_power(&self, power: bool) -> Result<(), pt3::Error> {
+    pub fn set_amp_power(self: &std::sync::Arc<Self>, power: bool) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::set_pt3_amp_power(
                 self.raw_ptr,
@@ -414,7 +409,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn set_layer_enable(&self, isdb: Isdb, tuner: u32, layer_mask: u32) -> Result<(), pt3::Error> {
+    pub fn set_layer_enable(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32, layer_mask: u32) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::set_pt3_layer_enable(
                 self.raw_ptr,
@@ -426,7 +421,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn get_layer_enable(&self, isdb: Isdb, tuner: u32) -> Result<u32, pt3::Error> {
+    pub fn get_layer_enable(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32) -> Result<u32, pt3::Error> {
         let mut raw_layer_mask = 0;
 
         pt3::Error::from(unsafe {
@@ -443,7 +438,7 @@ impl Device {
         })
     }
 
-    pub fn set_ts_pins_mode(&self, isdb: Isdb, tuner: u32, mode: TsPinsMode) -> Result<(), pt3::Error> {
+    pub fn set_ts_pins_mode(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32, mode: TsPinsMode) -> Result<(), pt3::Error> {
         let raw_ts_pins_mode = mode.into();
 
         pt3::Error::from(unsafe {
@@ -457,7 +452,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn get_ts_pins_level(&self, isdb: Isdb, tuner: u32) -> Result<TsPinsLevel, pt3::Error> {
+    pub fn get_ts_pins_level(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32) -> Result<TsPinsLevel, pt3::Error> {
         let mut raw_ts_pins_level = std::mem::MaybeUninit::<ffi::RawPt3TsPinsLevel>::uninit();
 
         pt3::Error::from(unsafe {
@@ -477,7 +472,7 @@ impl Device {
         })
     }
 
-    pub fn get_ts_sync_byte(&self, isdb: Isdb, tuner: u32) -> Result<u8, pt3::Error> {
+    pub fn get_ts_sync_byte(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32) -> Result<u8, pt3::Error> {
         let mut raw_sync_byte = 0;
 
         pt3::Error::from(unsafe {
@@ -494,7 +489,7 @@ impl Device {
         })
     }
 
-    pub fn set_ram_pins_mode(&self, mode: RamPinsMode) -> Result<(), pt3::Error> {
+    pub fn set_ram_pins_mode(self: &std::sync::Arc<Self>, mode: RamPinsMode) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::set_pt3_ram_pins_mode(
                 self.raw_ptr,
@@ -504,7 +499,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn lock_buffer(&self, buffer: &mut [u8], direction: TransferDirection) -> Result<BufferHandle, pt3::Error> {
+    pub fn lock_buffer(self: &std::sync::Arc<Self>, buffer: &mut [u8], direction: TransferDirection) -> Result<BufferHandle, pt3::Error> {
         let mut raw_handle: *mut std::ffi::c_void = std::ptr::null_mut();
 
         pt3::Error::from(unsafe {
@@ -518,54 +513,11 @@ impl Device {
         })
         .check_result()
         .map(|_| {
-            BufferHandle {
-                raw_ptr: raw_handle,
-            } 
+            BufferHandle::new(raw_handle, self.clone())
         })
     }
 
-    pub fn unlock_buffer(&self, handle: &BufferHandle) -> Result<(), pt3::Error> {
-        if handle.raw_ptr.is_null() {
-            return Err(pt3::Error::InvalidParameter);
-        }
-
-        pt3::Error::from(unsafe {
-            ffi::unlock_pt3_buffer(
-                self.raw_ptr,
-                handle.raw_ptr,
-            )
-        })
-        .check_result()
-    }
-
-    pub fn get_buffer_info(&self, handle: &BufferHandle) -> Result<Vec<BufferInfo>, pt3::Error> {
-        if handle.raw_ptr.is_null() {
-            return Err(pt3::Error::InvalidParameter);
-        }
-
-        let mut raw_info_table: *const ffi::RawPt3BufferInfo = std::ptr::null();
-        let mut raw_info_count = 0u32;
-
-        pt3::Error::from(unsafe {
-            ffi::get_pt3_buffer_info(
-                self.raw_ptr,
-                handle.raw_ptr,
-                &mut raw_info_table,
-                &mut raw_info_count,
-            )
-        })
-        .check_result()
-        .map(|_| {
-            unsafe {
-                std::slice::from_raw_parts(raw_info_table, raw_info_count as usize)
-            }
-            .iter()
-            .map(|&raw| raw.into())
-            .collect()
-        })
-    }
-
-    pub fn set_transfer_page_descriptor_address(&self, isdb: Isdb, tuner: u32, page_descriptor_address: u64) -> Result<(), pt3::Error> {
+    pub fn set_transfer_page_descriptor_address(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32, page_descriptor_address: u64) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::set_pt3_transfer_page_descriptor_address(
                 self.raw_ptr,
@@ -577,7 +529,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn set_transfer_enabled(&self, isdb: Isdb, tuner: u32, enable: bool) -> Result<(), pt3::Error> {
+    pub fn set_transfer_enabled(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32, enable: bool) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::set_pt3_transfer_enabled(
                 self.raw_ptr,
@@ -589,7 +541,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn get_transfer_enabled(&self, isdb: Isdb, tuner: u32) -> Result<bool, pt3::Error> {
+    pub fn get_transfer_enabled(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32) -> Result<bool, pt3::Error> {
         let mut raw_enabled = 0;
 
         pt3::Error::from(unsafe {
@@ -606,7 +558,7 @@ impl Device {
         })
     }
 
-    pub fn set_transfer_test_mode(&self, isdb: Isdb, tuner: u32, test_mode: bool, initial: u16, not_op: bool) -> Result<(), pt3::Error> {
+    pub fn set_transfer_test_mode(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32, test_mode: bool, initial: u16, not_op: bool) -> Result<(), pt3::Error> {
         pt3::Error::from(unsafe {
             ffi::set_pt3_transfer_test_mode(
                 self.raw_ptr,
@@ -620,7 +572,7 @@ impl Device {
         .check_result()
     }
 
-    pub fn get_transfer_info(&self, isdb: Isdb, tuner: u32) -> Result<TransferInfo, pt3::Error> {
+    pub fn get_transfer_info(self: &std::sync::Arc<Self>, isdb: Isdb, tuner: u32) -> Result<TransferInfo, pt3::Error> {
         let mut raw_transfer_info = std::mem::MaybeUninit::<ffi::RawPt3TransferInfo>::uninit();
 
         pt3::Error::from(unsafe {
@@ -639,35 +591,26 @@ impl Device {
             .into()
         })
     }
+}
 
-    pub fn sync_buffer_cpu(&self, handle: &BufferHandle) -> Result<(), pt3::Error> {
-        if handle.raw_ptr.is_null() {
-            return Err(pt3::Error::InvalidParameter);
-        }
-
-        pt3::Error::from(unsafe {
-            ffi::sync_pt3_buffer_cpu(
-                self.raw_ptr,
-                handle.raw_ptr,
-            )
+impl Drop for Device {
+    fn drop(&mut self) {
+        // 開いている場合は閉じる
+        // 閉じていてもエラーは無視する
+        _ = pt3::Error::from(unsafe {
+            ffi::close_pt3_device(self.raw_ptr)
         })
-        .check_result()
-    }
+        .check_result();
 
-    pub fn sync_buffer_io(&self, handle: &BufferHandle) -> Result<(), pt3::Error> {
-        if handle.raw_ptr.is_null() {
-            return Err(pt3::Error::InvalidParameter);
-        }
-
-        pt3::Error::from(unsafe {
-            ffi::sync_pt3_buffer_io(
-                self.raw_ptr,
-                handle.raw_ptr,
-            )
+        _ = pt3::Error::from(unsafe {
+            ffi::delete_pt3_device(self.raw_ptr)
         })
-        .check_result()
+        .check_result();
     }
 }
+
+unsafe impl Send for Device {}
+unsafe impl Sync for Device {}
 
 // =============================================================================
 // Isdb
@@ -1004,10 +947,94 @@ impl From<ffi::RawPt3BufferInfo> for BufferInfo {
 // BufferHandle
 // =============================================================================
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct BufferHandle {
     raw_ptr: *mut std::ffi::c_void,
+    _device: std::sync::Arc<Device>
 }
+
+impl BufferHandle {
+    pub(crate) fn new(raw_ptr: *mut std::ffi::c_void, device: std::sync::Arc<Device>) -> Self {
+        Self {
+            raw_ptr,
+            _device: device,
+        }
+    }
+
+    pub fn get_buffer_info(&self) -> Result<Vec<BufferInfo>, pt3::Error> {
+        if self.raw_ptr.is_null() {
+            return Err(pt3::Error::InvalidParameter);
+        }
+
+        let mut raw_info_table: *const ffi::RawPt3BufferInfo = std::ptr::null();
+        let mut raw_info_count = 0u32;
+
+        pt3::Error::from(unsafe {
+            ffi::get_pt3_buffer_info(
+                self._device.raw_ptr,
+                self.raw_ptr,
+                &mut raw_info_table,
+                &mut raw_info_count,
+            )
+        })
+        .check_result()
+        .map(|_| {
+            unsafe {
+                std::slice::from_raw_parts(raw_info_table, raw_info_count as usize)
+            }
+            .iter()
+            .map(|&raw| raw.into())
+            .collect()
+        })
+    }
+
+    pub fn sync_buffer_cpu(&self) -> Result<(), pt3::Error> {
+        if self.raw_ptr.is_null() {
+            return Err(pt3::Error::InvalidParameter);
+        }
+
+        pt3::Error::from(unsafe {
+            ffi::sync_pt3_buffer_cpu(
+                self._device.raw_ptr,
+                self.raw_ptr,
+            )
+        })
+        .check_result()
+    }
+
+    pub fn sync_buffer_io(&self) -> Result<(), pt3::Error> {
+        if self.raw_ptr.is_null() {
+            return Err(pt3::Error::InvalidParameter);
+        }
+
+        pt3::Error::from(unsafe {
+            ffi::sync_pt3_buffer_io(
+                self._device.raw_ptr,
+                self.raw_ptr,
+            )
+        })
+        .check_result()
+    }
+}
+
+impl Drop for BufferHandle {
+    fn drop(&mut self) {
+        if self.raw_ptr.is_null() {
+            return;
+        }
+
+        _ = pt3::Error::from(unsafe {
+            ffi::unlock_pt3_buffer(
+                self._device.raw_ptr,
+                self.raw_ptr,
+            )
+        })
+        .check_result();
+    }
+}
+
+unsafe impl Send for BufferHandle {}
+unsafe impl Sync for BufferHandle {}
 
 // =============================================================================
 // ConstantInfo

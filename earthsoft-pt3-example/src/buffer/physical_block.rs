@@ -1,4 +1,3 @@
-use crate::context;
 use earthsoft_sdk::pt3;
 
 // =============================================================================
@@ -7,42 +6,34 @@ use earthsoft_sdk::pt3;
 
 #[derive(Debug)]
 pub struct PhysicalBlock {
-    device: std::sync::Arc<context::DeviceContext>,
     handle: pt3::BufferHandle,
     buffer_info: Vec<pt3::BufferInfo>,
 }
 
 impl PhysicalBlock {
-    pub fn new(device: std::sync::Arc<context::DeviceContext>, buffer: &mut [u8], direction: pt3::TransferDirection) -> Result<Self, pt3::Error> {
+    pub fn new(device: std::sync::Arc<pt3::Device>, buffer: &mut [u8], direction: pt3::TransferDirection) -> Result<Self, pt3::Error> {
         let handle = device.lock_buffer(buffer, direction)?;
 
-        let buffer_info = device.get_buffer_info(&handle)
-            .inspect_err(|_| {
-                _ = device.unlock_buffer(&handle);
+        let buffer_info = handle.get_buffer_info()
+            .inspect_err(|e| {
+                eprintln!("{}", e);
             })?;
 
         Ok(Self {
-            device,
             handle,
             buffer_info,
         })
     }
 
     pub fn sync_cpu(&self) -> Result<(), pt3::Error> {
-        self.device.sync_buffer_cpu(&self.handle)
+        self.handle.sync_buffer_cpu()
     }
 
     pub fn sync_io(&self) -> Result<(), pt3::Error> {
-        self.device.sync_buffer_io(&self.handle)
+        self.handle.sync_buffer_io()
     }
 
     pub fn get_buffer_info(&self) -> &Vec<pt3::BufferInfo> {
         &self.buffer_info
-    }
-}
-
-impl Drop for PhysicalBlock {
-    fn drop(&mut self) {
-        _ = self.device.unlock_buffer(&self.handle);
     }
 }

@@ -1,9 +1,8 @@
 use crate::buffer;
-use crate::context;
 use crate::utility;
 use earthsoft_sdk::pt3;
 
-pub fn set_lnb_power(device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+pub fn set_lnb_power(device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
     let power = device.get_lnb_power()?;
 
     let labels = vec!["オフ", "+15V", "+11V"];
@@ -30,7 +29,7 @@ pub fn set_lnb_power(device: std::sync::Arc<context::DeviceContext>) -> Result<(
     device.set_lnb_power(power)
 }
 
-pub fn scan_channel(device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+pub fn scan_channel(device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
     let (isdb, tuner) = match select_tuner(false) {
         Ok(value) => value,
         Err(pt3::Error::NotImplemented) => return Ok(()),
@@ -51,7 +50,7 @@ pub fn scan_channel(device: std::sync::Arc<context::DeviceContext>) -> Result<()
     Ok(())
 }
 
-pub fn set_channel(device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+pub fn set_channel(device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
     let (isdb, tuner) = match select_tuner(false) {
         Ok(value) => value,
         Err(pt3::Error::NotImplemented) => return Ok(()),
@@ -81,7 +80,7 @@ pub fn set_channel(device: std::sync::Arc<context::DeviceContext>) -> Result<(),
     Ok(())
 }
 
-pub fn set_ts_id(device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+pub fn set_ts_id(device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
     let (_, tuner) = match select_tuner(true) {
         Ok(value) => value,
         Err(pt3::Error::NotImplemented) => return Ok(()),
@@ -94,13 +93,13 @@ pub fn set_ts_id(device: std::sync::Arc<context::DeviceContext>) -> Result<(), p
 
     device.set_satellite_id(tuner, id)
         .inspect_err(|e| {
-            eprintln!("context::DeviceContext::set_satellite_id() に失敗しました: {:?}", e);
+            eprintln!("pt3::Device::set_satellite_id() に失敗しました: {:?}", e);
         })?;
 
     Ok(())
 }
 
-pub fn show_error_rate_count(device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+pub fn show_error_rate_count(device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
     println!("--+-----+---+--------+----------------+--------+--------+--------+--------");
     println!("   推定  AGC RFレベル エラーパケット数 [誤り訂正されたビットレート       ]");
     println!("   C/N          (dBm)                  [リードソロモン          ] ビタビ");
@@ -114,14 +113,14 @@ pub fn show_error_rate_count(device: std::sync::Arc<context::DeviceContext>) -> 
 
             let (cn100, current_agc, _max_agc) = device.get_cn_agc(isdb, tuner)
                 .inspect_err(|e| {
-                    eprintln!("context::DeviceContext::get_cn_agc() に失敗しました: {:?}", e);
+                    eprintln!("pt3::Device::get_cn_agc() に失敗しました: {:?}", e);
                 })?;
             print!(" {:5.2} {:3}", cn100 as f64 / 100.0, current_agc);
 
             if isdb == pt3::Isdb::Terrestrial {
                 let rf_level = device.get_rf_level(tuner)
                     .inspect_err(|e| {
-                        eprintln!("context::DeviceContext::get_rf_level() に失敗しました: {:?}", e);
+                        eprintln!("pt3::Device::get_rf_level() に失敗しました: {:?}", e);
                     })?;
                 print!(" {:8.3}", rf_level);
             } else {
@@ -130,7 +129,7 @@ pub fn show_error_rate_count(device: std::sync::Arc<context::DeviceContext>) -> 
 
             let error_count = device.get_error_count(isdb, tuner)
                 .inspect_err(|e| {
-                    eprintln!("context::DeviceContext::get_error_count() に失敗しました: {:?}", e);
+                    eprintln!("pt3::Device::get_error_count() に失敗しました: {:?}", e);
                 })?;
             print!(" {:16}", error_count & 0x00ff_ffff);
 
@@ -143,7 +142,7 @@ pub fn show_error_rate_count(device: std::sync::Arc<context::DeviceContext>) -> 
             for layer in 0..layer_count {
                 let error_rate = device.get_corrected_error_rate(isdb, tuner, layer)
                     .inspect_err(|e| {
-                        eprintln!("context::DeviceContext::get_corrected_error_rate() に失敗しました: {:?}", e);
+                        eprintln!("pt3::Device::get_corrected_error_rate() に失敗しました: {:?}", e);
                     })?;
                 if error_rate.numerator == 0 || error_rate.denominator == 0 {
                     print!("{:8}", 0);
@@ -158,7 +157,7 @@ pub fn show_error_rate_count(device: std::sync::Arc<context::DeviceContext>) -> 
 
             let error_rate = device.get_inner_error_rate(isdb, tuner)
                 .inspect_err(|e| {
-                    eprintln!("context::DeviceContext::get_inner_error_rate() に失敗しました: {:?}", e);
+                    eprintln!("pt3::Device::get_inner_error_rate() に失敗しました: {:?}", e);
                 })?;
             if error_rate.numerator == 0 || error_rate.denominator == 0 {
                 print!("{:8}", 0);
@@ -173,7 +172,7 @@ pub fn show_error_rate_count(device: std::sync::Arc<context::DeviceContext>) -> 
     Ok(())
 }
 
-pub fn check_hardware(device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+pub fn check_hardware(device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
     if !check_dma_transfer_enabled(&device)? {
         return Ok(());
     }
@@ -210,7 +209,7 @@ pub fn check_hardware(device: std::sync::Arc<context::DeviceContext>) -> Result<
     })();
 
     if let Err(e) = device.set_ram_pins_mode(pt3::RamPinsMode::Normal) {
-        eprintln!("context::DeviceContext::set_ram_pins_mode() に失敗しました: {:?}", e);
+        eprintln!("pt3::Device::set_ram_pins_mode() に失敗しました: {:?}", e);
     }
 
     if result {
@@ -226,7 +225,7 @@ pub fn check_hardware(device: std::sync::Arc<context::DeviceContext>) -> Result<
     Ok(())
 }
 
-pub fn set_amp_power(device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+pub fn set_amp_power(device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
     println!("[AMP 電源設定]");
     println!("0: (戻る)");
     println!("1: オフ");
@@ -240,7 +239,7 @@ pub fn set_amp_power(device: std::sync::Arc<context::DeviceContext>) -> Result<(
     device.set_amp_power(power)
 }
 
-pub fn set_tuner_sleep(device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+pub fn set_tuner_sleep(device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
     let (isdb, tuner) = match select_tuner(false) {
         Ok(value) => value,
         Err(pt3::Error::NotImplemented) => return Ok(()),
@@ -270,7 +269,7 @@ pub fn set_tuner_sleep(device: std::sync::Arc<context::DeviceContext>) -> Result
     device.set_tuner_sleep(isdb, tuner, sleep)
 }
 
-pub fn scan_test(device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+pub fn scan_test(device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
     _ = scan_satellite_channels(&device, 0, 7..=7)?;
     _ = scan_satellite_channels(&device, 1, 15..=15)?;
     _ = scan_terrestrial_channels(&device, 0, 70..=70)?;
@@ -285,7 +284,7 @@ pub fn scan_test(device: std::sync::Arc<context::DeviceContext>) -> Result<(), p
     Ok(())
 }
 
-pub fn check_eratta(device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+pub fn check_eratta(device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
     if !check_dma_transfer_enabled(&device)? {
         return Ok(());
     }
@@ -314,7 +313,7 @@ pub fn check_eratta(device: std::sync::Arc<context::DeviceContext>) -> Result<()
     Ok(())
 }
 
-fn scan_satellite_channels(device: &std::sync::Arc<context::DeviceContext>, tuner: u32, channels: impl IntoIterator<Item = u32>) -> Result<(), pt3::Error> {
+fn scan_satellite_channels(device: &std::sync::Arc<pt3::Device>, tuner: u32, channels: impl IntoIterator<Item = u32>) -> Result<(), pt3::Error> {
     println!("                        変:変更指示 / 起:起動制御信号 / ア:アップリンク制御情報");
     println!("---+----+---+-------+------+--+--+--+-------------------+----------------------");
     println!("No. Ch.  AGC Δclock Δcarr 変 起 ア 伝送モード/Slot数   TS-ID (Hex)");
@@ -330,7 +329,7 @@ fn scan_satellite_channels(device: &std::sync::Arc<context::DeviceContext>, tune
     Ok(())
 }
 
-fn scan_satellite_channel(device: &std::sync::Arc<context::DeviceContext>, tuner: u32, channel: u32) -> Result<(), pt3::Error> {
+fn scan_satellite_channel(device: &std::sync::Arc<pt3::Device>, tuner: u32, channel: u32) -> Result<(), pt3::Error> {
     let (is_bs, number) = get_satellite_channel_name(channel);
     print!("{:3} {}{:02}"
         , channel
@@ -416,7 +415,7 @@ fn get_satellite_channel_name(channel: u32) -> (bool, u32) {
     }
 }
 
-fn scan_terrestrial_channels(device: &std::sync::Arc<context::DeviceContext>, tuner: u32, channels: impl IntoIterator<Item = u32>) -> Result<(), pt3::Error> {
+fn scan_terrestrial_channels(device: &std::sync::Arc<pt3::Device>, tuner: u32, channels: impl IntoIterator<Item = u32>) -> Result<(), pt3::Error> {
     println!("---+---+---+-------+------+-+------------------------------------------");
     println!("No. Ch. AGC Δclock Δcarr S 変調/符号化率/インターリーブ/セグメント数");
     println!("        255   (ppm)  (kHz)   A階層    B階層    C階層");
@@ -431,7 +430,7 @@ fn scan_terrestrial_channels(device: &std::sync::Arc<context::DeviceContext>, tu
     Ok(())
 }
 
-fn scan_terrestrial_channel(device: &std::sync::Arc<context::DeviceContext>, tuner: u32, channel: u32) -> Result<(), pt3::Error> {
+fn scan_terrestrial_channel(device: &std::sync::Arc<pt3::Device>, tuner: u32, channel: u32) -> Result<(), pt3::Error> {
     let (is_catv, number) = get_terrestrial_channel_name(channel);
     print!("{:3} {}{:02}"
         , channel
@@ -525,7 +524,7 @@ fn select_tuner(satellite_only: bool) -> Result<(pt3::Isdb, u32), pt3::Error> {
     }
 }
 
-fn check_dma_transfer_enabled(device: &std::sync::Arc<context::DeviceContext>) -> Result<bool, pt3::Error> {
+fn check_dma_transfer_enabled(device: &std::sync::Arc<pt3::Device>) -> Result<bool, pt3::Error> {
     for isdb in pt3::Isdb::ALL {
         for tuner in 0..2 {
             let enabled = device.get_transfer_enabled(isdb, tuner)?;
@@ -539,7 +538,7 @@ fn check_dma_transfer_enabled(device: &std::sync::Arc<context::DeviceContext>) -
     Ok(true)
 }
 
-fn check_constant_info(device: &std::sync::Arc<context::DeviceContext>) -> bool {
+fn check_constant_info(device: &std::sync::Arc<pt3::Device>) -> bool {
     let constant_info = match device.get_constant_info() {
         Ok(constant_info) => constant_info,
         Err(_) => {
@@ -570,7 +569,7 @@ fn check_constant_info(device: &std::sync::Arc<context::DeviceContext>) -> bool 
     true
 }
 
-fn check_ts_pins(device: &std::sync::Arc<context::DeviceContext>) -> bool {
+fn check_ts_pins(device: &std::sync::Arc<pt3::Device>) -> bool {
     for ram_pins_mode in pt3::RamPinsMode::ALL.iter().rev().copied() {
         if let Err(_) = device.set_ram_pins_mode(ram_pins_mode) {
             return false;
@@ -605,7 +604,7 @@ fn check_ts_pins(device: &std::sync::Arc<context::DeviceContext>) -> bool {
     true
 }
 
-fn check_ts_pins_level(device: &std::sync::Arc<context::DeviceContext>, mode: u32, level: &mut u32) -> bool {
+fn check_ts_pins_level(device: &std::sync::Arc<pt3::Device>, mode: u32, level: &mut u32) -> bool {
     let mut table = [[pt3::TsPinsMode::default(); 2]; 2];
     let mut bit = 0;
 
@@ -667,7 +666,7 @@ fn check_ts_pins_level(device: &std::sync::Arc<context::DeviceContext>, mode: u3
     true
 }
 
-fn check_ts_sync_byte(device: &std::sync::Arc<context::DeviceContext>) -> bool {
+fn check_ts_sync_byte(device: &std::sync::Arc<pt3::Device>) -> bool {
     for isdb in pt3::Isdb::ALL {
         for tuner in 0..2 {
             let sync_byte = match device.get_ts_sync_byte(isdb, tuner) {
@@ -687,7 +686,7 @@ fn check_ts_sync_byte(device: &std::sync::Arc<context::DeviceContext>) -> bool {
     true
 }
 
-fn check_tuner_pll(device: &std::sync::Arc<context::DeviceContext>) -> bool {
+fn check_tuner_pll(device: &std::sync::Arc<pt3::Device>) -> bool {
     for isdb in pt3::Isdb::ALL {
         for tuner in 0..2 {
             if let Err(_) = device.set_frequency(isdb, tuner, 0, 0) {
@@ -699,7 +698,7 @@ fn check_tuner_pll(device: &std::sync::Arc<context::DeviceContext>) -> bool {
     true
 }
 
-fn cleanup_transfer(device: &std::sync::Arc<context::DeviceContext>) {
+fn cleanup_transfer(device: &std::sync::Arc<pt3::Device>) {
     for isdb in pt3::Isdb::ALL {
         for tuner in 0..2 {
             if let Err(_) = device.set_transfer_enabled(isdb, tuner, false) {
@@ -712,7 +711,7 @@ fn cleanup_transfer(device: &std::sync::Arc<context::DeviceContext>) {
     }
 }
 
-fn check_transfer(device: &std::sync::Arc<context::DeviceContext>, not_op_lfsr: bool) -> bool {
+fn check_transfer(device: &std::sync::Arc<pt3::Device>, not_op_lfsr: bool) -> bool {
     let mut buffers: [[buffer::RingBuffer; 2]; 2] = Default::default();
 
     for isdb in pt3::Isdb::ALL {
@@ -823,7 +822,7 @@ fn check_transfer(device: &std::sync::Arc<context::DeviceContext>, not_op_lfsr: 
     true
 }
 
-fn check_eratta_transfer(device: &std::sync::Arc<context::DeviceContext>) -> bool {
+fn check_eratta_transfer(device: &std::sync::Arc<pt3::Device>) -> bool {
     let mut buffers: [[buffer::RingBuffer; 2]; 2] = Default::default();
 
     for isdb in pt3::Isdb::ALL {

@@ -1,5 +1,4 @@
 use crate::buffer;
-use crate::context;
 use earthsoft_sdk::pt3;
 
 // =============================================================================
@@ -26,7 +25,7 @@ struct BufferStorage {
 }
 
 impl BufferStorage {
-    fn new(device: std::sync::Arc<context::DeviceContext>, spec: BufferSpec) -> Result<Self, pt3::Error> {
+    fn new(device: std::sync::Arc<pt3::Device>, spec: BufferSpec) -> Result<Self, pt3::Error> {
         let size = spec.block_size * spec.block_count;
 
         let mut buffer = buffer::MemoryBuffer::new(size as usize)
@@ -94,7 +93,7 @@ impl PageBuffer {
         }
     }
 
-    pub fn allocate(&mut self, device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+    pub fn allocate(&mut self, device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
         self.storage.replace(BufferStorage::new(device.clone(), self.spec)?);
 
         Ok(())
@@ -263,7 +262,7 @@ impl TsBuffer {
         }
     }
 
-    pub fn allocate(&mut self, device: std::sync::Arc<context::DeviceContext>) -> Result<(), pt3::Error> {
+    pub fn allocate(&mut self, device: std::sync::Arc<pt3::Device>) -> Result<(), pt3::Error> {
         self.storage.replace(BufferStorage::new(device.clone(), self.spec)?);
 
         Ok(())
